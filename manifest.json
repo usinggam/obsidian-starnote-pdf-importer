@@ -1,0 +1,15 @@
+{
+	"id": "starnote-pdf-importer",
+	"name": "Starnote PDF Importer",
+	"version": "1.0.0",
+	"minAppVersion": "1.0.0",
+	"description": "Open Starnote app, edit PDFs, and import edited PDFs as new copies into Obsidian vault",
+	"author": "Developer",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false,
+	"mobileCompatibility": {
+		"android": true,
+		"ios": false
+	}
+}

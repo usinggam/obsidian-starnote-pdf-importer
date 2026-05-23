@@ -1,0 +1,10 @@
+node_modules/
+.obsidian/
+*.log
+.DS_Store
+dist/
+build/
+*.swp
+*.swo
+.vscode/
+.idea/

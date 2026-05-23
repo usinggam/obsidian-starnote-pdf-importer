@@ -1,0 +1,19 @@
+{
+	"name": "obsidian-starnote-pdf-importer",
+	"version": "1.0.0",
+	"description": "Import edited PDFs from Starnote into Obsidian",
+	"main": "main.js",
+	"scripts": {
+		"dev": "tsc --noEmit && node esbuild.config.mjs",
+		"build": "tsc --noEmit && node esbuild.config.mjs --production"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"esbuild": "^0.20.0",
+		"obsidian": "latest",
+		"typescript": "^5.0.0"
+	}
+}
