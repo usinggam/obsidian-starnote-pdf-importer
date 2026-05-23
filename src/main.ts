@@ -13,9 +13,9 @@ interface StarnotePdfImporterSettings {
 const DEFAULT_SETTINGS: StarnotePdfImporterSettings = {
 	defaultImportFolder: '',
 	autoOpenAfterImport: true,
-	filenamePrefix: 'imported_',
+	filenamePrefix: 'edited_',
 	fileConflictBehavior: 'rename',
-	starnotePackageName: 'com.starnote.app',
+	starnotePackageName: 'com.onyx.galaxy.note',
 	lastEditingFile: null,
 	lastEditingFolder: null
 };
