@@ -127,9 +127,29 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			this.settings.lastEditingFolder = file.parent?.path || '';
 			await this.saveSettings();
 			
-			new Notice(`Opening StarNote... Edit PDF manually in StarNote, then use Re-import`);
+			// 尝试多种 Intent 方式打开 StarNote 并提示用户可以手动在 StarNote 中导入
+			new Notice(`Opening StarNote...`);
 			
-			window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+			// 先尝试用简单方式打开，然后给用户说明
+			let opened = false;
+			
+			try {
+				// 方法1: 直接打开应用
+				window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+				opened = true;
+			} catch (e) {
+				console.log('Method 1 failed');
+			}
+			
+			// 无论如何，给用户明确的提示
+			setTimeout(() => {
+				new Notice(`StarNote opened! Now manually import: "${file.name}" into StarNote to edit.`, 5000);
+			}, 800);
+			
+			if (!opened) {
+				new Notice('Please open StarNote manually from your app drawer');
+			}
+			
 		} catch (error) {
 			new Notice('Please open StarNote manually from your app drawer');
 			console.error('StarNote open error:', error);
@@ -381,16 +401,27 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 		reimportBtn.style.cursor = 'pointer';
 		reimportBtn.addEventListener('click', () => this.plugin.pickAndImportPdf(true));
 
-		containerEl.createEl('h3', { text: '使用说明 (How to Use)' });
+		containerEl.createEl('h3', { text: '使用说明 (Why manual import/export?)' });
 		
 		const instructions = containerEl.createEl('div');
 		instructions.innerHTML = `
+			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+				<h4 style="margin-top: 0;">🤔 为什么需要手动导入/导出？</h4>
+				<p style="margin: 8px 0;">由于 Android 系统和 StarNote 应用的限制：</p>
+				<ul style="margin: 8px 0; padding-left: 20px;">
+					<li>StarNote 没有公开的 API 来接收 PDF</li>
+					<li>没有直接的 Intent 方式自动发送文件到 StarNote</li>
+					<li>每个应用的文件是沙盒隔离的</li>
+				</ul>
+			</div>
+			
 			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
 				<h4 style="margin-top: 0;">📝 完整工作流 (Complete Workflow):</h4>
 				<ol style="margin: 8px 0; padding-left: 20px;">
 					<li>在 Obsidian 找到要编辑的 PDF</li>
 					<li>右键点击 → 选择 <strong>"Edit in StarNote ✏️"</strong></li>
-					<li>StarNote 会打开后，<strong>手动在 StarNote 中导入 PDF</strong> 并编辑</li>
+					<li>StarNote 会直接打开</li>
+					<li><strong>在 StarNote 中手动打开/导入 PDF</strong> 并编辑</li>
 					<li>编辑完成后，保存/导出 PDF</li>
 					<li>回到 Obsidian，点击 <strong>"🔄 Re-import Edited PDF"</strong></li>
 					<li>选择 StarNote 导出的 PDF 文件</li>
@@ -399,11 +430,14 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 			</div>
 			
 			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px;">
-				<h4 style="margin-top: 0;">💡 提示 (Note):</h4>
-				<p style="margin: 8px 0;"><strong>StarNote 需要手动导入 PDF (Manual import only)</strong>。
-				由于 Android 限制，无法自动把 PDF 直接传给 StarNote。请在 StarNote 中手动打开 PDF 进行编辑。
-				编辑完成后用上面的步骤重新导入回 Obsidian 即可。</p>
-				<p style="margin: 12px 0 0;">这个插件让流程更简单，帮你记住上次编辑的文件位置，方便重新导入！</p>
+				<h4 style="margin-top: 0;">💡 插件的价值</h4>
+				<p style="margin: 8px 0;">这个插件让流程更简单：</p>
+				<ul style="margin: 8px 0; padding-left: 20px;">
+					<li>一键打开 StarNote，不用去桌面找</li>
+					<li>记住你正在编辑的文件</li>
+					<li>智能重新导入到同一位置</li>
+					<li>自动创建时间戳备份，不覆盖原文件</li>
+				</ul>
 			</div>
 		`;
 	}
