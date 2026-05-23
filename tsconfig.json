@@ -13,7 +13,8 @@
 		"incremental": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
-		"lib": ["DOM", "ESNext"]
+		"lib": ["DOM", "ESNext"],
+		"ignoreDeprecations": "6.0"
 	},
 	"include": ["src/**/*.ts"]
 }

@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Platform, Notice, TFile, Menu, FileSystemAdapter } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Platform, Notice, TFile, Menu } from 'obsidian';
 
 interface StarnotePdfImporterSettings {
 	defaultImportFolder: string;
@@ -28,13 +28,13 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		
 		this.addCommand({
 			id: 'open-starnote',
-			name: 'Open Starnote App',
+			name: 'Open StarNote App',
 			callback: () => this.openStarnoteApp()
 		});
 
 		this.addCommand({
 			id: 'import-pdf-from-starnote',
-			name: 'Import PDF from Starnote',
+			name: 'Import PDF from StarNote',
 			callback: () => this.importPdfFromStarnote()
 		});
 
@@ -46,7 +46,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		
 		this.addCommand({
 			id: 'edit-current-pdf-in-starnote',
-			name: 'Edit Current PDF in Starnote',
+			name: 'Edit Current PDF in StarNote',
 			checkCallback: (checking) => {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (checking) {
@@ -60,7 +60,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		
 		this.addCommand({
 			id: 'reimport-edited-pdf',
-			name: 'Re-import Edited PDF (after Starnote)',
+			name: 'Re-import Edited PDF (after StarNote)',
 			checkCallback: (checking) => {
 				if (checking) {
 					return true;
@@ -76,7 +76,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 				if (file instanceof TFile && file.extension === 'pdf') {
 					menu.addItem((item) => {
 						item
-							.setTitle('Edit in Starnote ✏️')
+							.setTitle('Edit in StarNote ✏️')
 							.setIcon('pencil')
 							.onClick(() => this.sendPdfToStarnote(file));
 					});
@@ -104,46 +104,14 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		}
 
 		const packageName = this.settings.starnotePackageName;
-		new Notice(`Attempting to open Starnote (${packageName})...`);
+		new Notice('Opening StarNote...');
 		
-		let attempts = 0;
-		const maxAttempts = 4;
-		
-		const tryOpen = () => {
-			try {
-				switch (attempts) {
-					case 0:
-						window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
-						break;
-					case 1:
-						window.location.href = `intent://#Intent;package=${packageName};scheme=app;end`;
-						break;
-					case 2:
-						window.location.href = `intent://#Intent;package=${packageName};end`;
-						break;
-					case 3:
-						window.location.href = `market://details?id=${packageName}`;
-						break;
-				}
-				attempts++;
-				
-				if (attempts < maxAttempts) {
-					setTimeout(tryOpen, 700);
-				} else if (attempts === maxAttempts) {
-					new Notice('Please open Starnote manually from your app drawer.');
-				}
-			} catch (error) {
-				attempts++;
-				if (attempts < maxAttempts) {
-					setTimeout(tryOpen, 400);
-				} else {
-					new Notice('Could not open Starnote automatically.');
-					console.error('Starnote open error:', error);
-				}
-			}
-		};
-		
-		tryOpen();
+		try {
+			window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+		} catch (error) {
+			new Notice('Please open StarNote manually from your app drawer');
+			console.error('StarNote open error:', error);
+		}
 	}
 
 	private async sendPdfToStarnote(file: TFile) {
@@ -155,58 +123,16 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		try {
 			const packageName = this.settings.starnotePackageName;
 			
-			// 记住正在编辑的文件
 			this.settings.lastEditingFile = file.path;
 			this.settings.lastEditingFolder = file.parent?.path || '';
 			await this.saveSettings();
 			
-			new Notice(`Opening "${file.name}" in Starnote ✏️...`);
+			new Notice(`Opening StarNote... Edit PDF manually in StarNote, then use Re-import`);
 			
-			// 尝试多种方式打开
-			let attempts = 0;
-			const maxAttempts = 5;
-			
-			const tryOpen = () => {
-				try {
-					switch (attempts) {
-						case 0:
-							window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
-							break;
-						case 1:
-							window.location.href = `intent://edit?path=${encodeURIComponent(file.name)}#Intent;package=${packageName};scheme=app;end`;
-							break;
-						case 2:
-							window.location.href = `intent://#Intent;package=${packageName};scheme=app;end`;
-							break;
-						case 3:
-							window.location.href = `intent://#Intent;package=${packageName};end`;
-							break;
-						case 4:
-							window.location.href = `market://details?id=${packageName}`;
-							break;
-					}
-					attempts++;
-					
-					if (attempts < maxAttempts) {
-						setTimeout(tryOpen, 700);
-					} else if (attempts === maxAttempts) {
-						new Notice('Please open Starnote manually and import the PDF.');
-					}
-				} catch (error) {
-					attempts++;
-					if (attempts < maxAttempts) {
-						setTimeout(tryOpen, 400);
-					} else {
-						new Notice('Could not open Starnote automatically.');
-						console.error('Starnote open error:', error);
-					}
-				}
-			};
-			
-			tryOpen();
+			window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
 		} catch (error) {
-			new Notice('Could not send PDF to Starnote');
-			console.error('Send to Starnote error:', error);
+			new Notice('Please open StarNote manually from your app drawer');
+			console.error('StarNote open error:', error);
 		}
 	}
 
@@ -215,15 +141,9 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			new Notice('This feature only works on Android devices');
 			return;
 		}
-
-		try {
-			const intentUri = `obsidian://starnote-import`;
-			window.location.href = intentUri;
-			new Notice('Opening file picker to import PDF...');
-		} catch (error) {
-			new Notice('Failed to open file picker');
-			console.error('Import error:', error);
-		}
+		
+		new Notice('Opening file picker to import PDF...');
+		this.pickAndImportPdf();
 	}
 
 	public async pickAndImportPdf(forEditingReturn: boolean = false) {
@@ -250,22 +170,18 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			
 			let targetPath = newFilename;
 			
-			// 如果是从编辑返回，优先保存到原来的位置
 			if (forEditingReturn && this.settings.lastEditingFile) {
 				const lastFile = this.app.vault.getAbstractFileByPath(this.settings.lastEditingFile);
 				if (lastFile instanceof TFile) {
-					// 在原文件同一位置创建副本
 					const originalPath = lastFile.parent?.path || '';
 					baseName = lastFile.name.replace('.pdf', '');
 					newFilename = `${baseName}_edited_${timestamp}.pdf`;
 					targetPath = originalPath ? `${originalPath}/${newFilename}` : newFilename;
 					
-					// 清除上次编辑记录
 					this.settings.lastEditingFile = null;
 					this.settings.lastEditingFolder = null;
 					await this.saveSettings();
 				} else {
-					// 回退到默认位置
 					if (this.settings.defaultImportFolder) {
 						targetPath = `${this.settings.defaultImportFolder}/${newFilename}`;
 					}
@@ -284,7 +200,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			
 			if (importedFile instanceof TFile) {
 				const message = forEditingReturn 
-					? `✓ Edited PDF saved: ${importedFile.name}`
+					? `✓ Edited PDF saved: ${importedFile.name}` 
 					: `✓ PDF imported: ${importedFile.name}`;
 				new Notice(message);
 				
@@ -309,12 +225,10 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			case 'overwrite':
 				await this.app.vault.delete(existingFile);
 				return originalPath;
-			
 			case 'skip':
 				const timestamp = Date.now();
-				const baseName = originalPath.replace('.pdf', '');
-				return `${baseName}_copy_${timestamp}.pdf`;
-			
+				const baseNameSkip = originalPath.replace('.pdf', '');
+				return `${baseNameSkip}_copy_${timestamp}.pdf`;
 			case 'rename':
 			default:
 				let counter = 1;
@@ -325,35 +239,6 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 					counter++;
 				}
 				return newPath;
-		}
-	}
-
-	private async importFromExternalUri(uri: string) {
-		try {
-			const response = await fetch(uri);
-			if (!response.ok) {
-				throw new Error('Failed to fetch file');
-			}
-
-			const blob = await response.blob();
-			const filename = this.extractFilenameFromUri(uri) || `imported_pdf_${Date.now()}.pdf`;
-			
-			const file = new File([blob], filename, { type: 'application/pdf' });
-			await this.importPdfFile(file);
-		} catch (error) {
-			new Notice('Failed to import PDF from external source');
-			console.error('External import error:', error);
-		}
-	}
-
-	private extractFilenameFromUri(uri: string): string | null {
-		try {
-			const url = new URL(uri);
-			const pathname = url.pathname;
-			const parts = pathname.split('/');
-			return parts[parts.length - 1] || null;
-		} catch {
-			return null;
 		}
 	}
 
@@ -404,13 +289,13 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'Starnote PDF Importer Settings' });
+		containerEl.createEl('h2', { text: 'StarNote PDF Importer Pro' });
 
 		new Setting(containerEl)
-			.setName('Starnote App Package Name')
-			.setDesc('Package name of the Starnote app on your device')
+			.setName('StarNote App Package Name')
+			.setDesc('Package name of StarNote notes app on your device')
 			.addText(text => text
-				.setPlaceholder('com.starnote.app')
+				.setPlaceholder('com.onyx.galaxy.note')
 				.setValue(this.plugin.settings.starnotePackageName)
 				.onChange(async (value) => {
 					this.plugin.settings.starnotePackageName = value;
@@ -432,7 +317,7 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 			.setName('Filename Prefix')
 			.setDesc('Prefix added to imported PDF filenames')
 			.addText(text => text
-				.setPlaceholder('imported_')
+				.setPlaceholder('edited_')
 				.setValue(this.plugin.settings.filenamePrefix)
 				.onChange(async (value) => {
 					this.plugin.settings.filenamePrefix = value;
@@ -469,7 +354,7 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 		actionContainer.style.gap = '12px';
 		actionContainer.style.flexWrap = 'wrap';
 		
-		const openBtn = actionContainer.createEl('button', { text: 'Open Starnote App' });
+		const openBtn = actionContainer.createEl('button', { text: 'Open StarNote App' });
 		openBtn.style.padding = '10px 16px';
 		openBtn.style.borderRadius = '8px';
 		openBtn.style.backgroundColor = 'var(--interactive-accent)';
@@ -503,52 +388,23 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
 				<h4 style="margin-top: 0;">📝 完整工作流 (Complete Workflow):</h4>
 				<ol style="margin: 8px 0; padding-left: 20px;">
-					<li>在 Obsidian 中找到要编辑的 PDF 文件</li>
-					<li>右键点击 → 选择 <strong>"Edit in Starnote ✏️"</strong></li>
-					<li>Starnote 打开后，在里面打开并编辑你的 PDF</li>
-					<li>编辑完成后，保存或导出 PDF</li>
+					<li>在 Obsidian 找到要编辑的 PDF</li>
+					<li>右键点击 → 选择 <strong>"Edit in StarNote ✏️"</strong></li>
+					<li>StarNote 会打开后，<strong>手动在 StarNote 中导入 PDF</strong> 并编辑</li>
+					<li>编辑完成后，保存/导出 PDF</li>
 					<li>回到 Obsidian，点击 <strong>"🔄 Re-import Edited PDF"</strong></li>
-					<li>选择 Starnote 导出的 PDF 文件</li>
+					<li>选择 StarNote 导出的 PDF 文件</li>
 					<li>✅ 编辑后的副本会保存到原文件同一位置！</li>
 				</ol>
 			</div>
 			
 			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px;">
-				<h4 style="margin-top: 0;">🔍 查找 StarNote 包名 (Find StarNote Package):</h4>
-				<p style="margin: 8px 0;">如果不能自动打开 StarNote 笔记，请先尝试以下常见包名（复制到上面的设置中）：</p>
-				<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin: 12px 0;">
-					<button id="try1" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.app</button>
-					<button id="try2" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.xiaomiyoupin.starnote</button>
-					<button id="try3" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.editor</button>
-					<button id="try4" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.notes</button>
-					<button id="try5" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.notepad</button>
-					<button id="try6" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">cn.starnote.app</button>
-				</div>
-				<p style="margin-top: 12px;"><strong>如果上面都不行，请手动查找 (Manual Lookup):</strong></p>
-				<ol style="margin: 8px 0; padding-left: 20px;">
-					<li>下载一个应用检查工具（如 "App Inspector" 或 "Package Name Viewer"）</li>
-					<li>打开它，在应用列表中找到 "StarNote 笔记"</li>
-					<li>复制它的包名（格式：com.xxx.xxx）</li>
-					<li>粘贴到上面的 "Starnote App Package Name" 设置中</li>
-				</ol>
+				<h4 style="margin-top: 0;">💡 提示 (Note):</h4>
+				<p style="margin: 8px 0;"><strong>StarNote 需要手动导入 PDF (Manual import only)</strong>。
+				由于 Android 限制，无法自动把 PDF 直接传给 StarNote。请在 StarNote 中手动打开 PDF 进行编辑。
+				编辑完成后用上面的步骤重新导入回 Obsidian 即可。</p>
+				<p style="margin: 12px 0 0;">这个插件让流程更简单，帮你记住上次编辑的文件位置，方便重新导入！</p>
 			</div>
 		`;
-		
-		// Add click handlers to the package name buttons
-		const packageButtons = ['try1', 'try2', 'try3', 'try4', 'try5', 'try6'];
-		const packageNames = ['com.starnote.app', 'com.xiaomiyoupin.starnote', 'com.starnote.editor', 
-		                     'com.starnote.notes', 'com.starnote.notepad', 'cn.starnote.app'];
-		
-		packageButtons.forEach((id, index) => {
-			const btn = document.getElementById(id);
-			if (btn) {
-				btn.addEventListener('click', async () => {
-					this.plugin.settings.starnotePackageName = packageNames[index];
-					await this.plugin.saveSettings();
-					this.display(); // Refresh to show the new value
-					new Notice(`Set package to: ${packageNames[index]}`);
-				});
-			}
-		});
 	}
 }
