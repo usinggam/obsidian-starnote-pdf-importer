@@ -5,19 +5,19 @@ interface StarnotePdfImporterSettings {
 	autoOpenAfterImport: boolean;
 	filenamePrefix: string;
 	fileConflictBehavior: 'rename' | 'overwrite' | 'skip';
+	starnotePackageName: string;
 }
 
 const DEFAULT_SETTINGS: StarnotePdfImporterSettings = {
 	defaultImportFolder: '',
 	autoOpenAfterImport: true,
 	filenamePrefix: 'imported_',
-	fileConflictBehavior: 'rename'
+	fileConflictBehavior: 'rename',
+	starnotePackageName: 'com.starnote.app'
 };
 
 export default class StarnotePdfImporterPlugin extends Plugin {
 	settings: StarnotePdfImporterSettings;
-	private starnotePackageName = 'com.starnote.app';
-	private starnoteActivityName = 'com.starnote.app.MainActivity';
 
 	async onload() {
 		await this.loadSettings();
@@ -74,14 +74,47 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			return;
 		}
 
-		try {
-			const intentUri = `android-app://${this.starnotePackageName}`;
-			window.location.href = intentUri;
-			new Notice('Opening Starnote app...');
-		} catch (error) {
-			new Notice('Failed to open Starnote app. Please make sure it is installed.');
-			console.error('Starnote open error:', error);
-		}
+		const packageName = this.settings.starnotePackageName;
+		new Notice(`Attempting to open Starnote (${packageName})...`);
+		
+		let attempts = 0;
+		const maxAttempts = 4;
+		
+		const tryOpen = () => {
+			try {
+				switch (attempts) {
+					case 0:
+						window.location.href = `intent://#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+						break;
+					case 1:
+						window.location.href = `intent://#Intent;package=${packageName};scheme=app;end`;
+						break;
+					case 2:
+						window.location.href = `intent://#Intent;package=${packageName};end`;
+						break;
+					case 3:
+						window.location.href = `market://details?id=${packageName}`;
+						break;
+				}
+				attempts++;
+				
+				if (attempts < maxAttempts) {
+					setTimeout(tryOpen, 700);
+				} else if (attempts === maxAttempts) {
+					new Notice('Please open Starnote manually from your app drawer.');
+				}
+			} catch (error) {
+				attempts++;
+				if (attempts < maxAttempts) {
+					setTimeout(tryOpen, 400);
+				} else {
+					new Notice('Could not open Starnote automatically.');
+					console.error('Starnote open error:', error);
+				}
+			}
+		};
+		
+		tryOpen();
 	}
 
 	private sendPdfToStarnote(file: TFile) {
@@ -91,14 +124,12 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		}
 
 		try {
-			const adapter = this.app.vault.adapter;
-			const path = file.path;
-			
-			const intentUri = `android-app://${this.starnotePackageName}/edit?path=${encodeURIComponent(path)}`;
+			const packageName = this.settings.starnotePackageName;
+			const intentUri = `intent://edit?path=${encodeURIComponent(file.path)}#Intent;package=${packageName};scheme=app;end`;
 			window.location.href = intentUri;
-			new Notice(`Sending "${file.name}" to Starnote for editing...`);
+			new Notice(`Sending "${file.name}" to Starnote...`);
 		} catch (error) {
-			new Notice('Failed to send PDF to Starnote');
+			new Notice('Could not send PDF to Starnote');
 			console.error('Send to Starnote error:', error);
 		}
 	}
@@ -275,6 +306,17 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 		containerEl.createEl('h2', { text: 'Starnote PDF Importer Settings' });
 
 		new Setting(containerEl)
+			.setName('Starnote App Package Name')
+			.setDesc('Package name of the Starnote app on your device')
+			.addText(text => text
+				.setPlaceholder('com.starnote.app')
+				.setValue(this.plugin.settings.starnotePackageName)
+				.onChange(async (value) => {
+					this.plugin.settings.starnotePackageName = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
 			.setName('Default Import Folder')
 			.setDesc('Folder path where imported PDFs will be saved (leave empty for vault root)')
 			.addText(text => text
@@ -335,17 +377,26 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 		instructions.innerHTML = `
 			<h4>How to use:</h4>
 			<ol>
-				<li><strong>Open Starnote:</strong> Use the "Open Starnote App" command or click the button above</li>
-				<li><strong>Edit PDF:</strong> Open or import a PDF in Starnote and make your edits</li>
-				<li><strong>Export to Obsidian:</strong> Use Starnote's share/export feature and select Obsidian, or use the "Import PDF File" command in Obsidian</li>
-				<li><strong>New Copy:</strong> The imported PDF will be saved as a new copy with a timestamp and prefix</li>
+				<li><strong>Find Starnote Package:</strong> Check "Starnote App Package Name" setting above</li>
+				<li><strong>Open Starnote:</strong> Use "Open Starnote App" command or button above</li>
+				<li><strong>Edit PDF:</strong> Open or import a PDF in Starnote and make edits</li>
+				<li><strong>Import to Obsidian:</strong> Use "Import PDF File" command to select PDF</li>
+				<li><strong>New Copy:</strong> Imported PDF saved as new copy with timestamp & prefix</li>
 			</ol>
-			<h4>Android Intent Setup:</h4>
-			<p>To enable direct export from Starnote to Obsidian:</p>
+			<h4>Find Starnote Package Name:</h4>
+			<p>If app doesn't open, check your device settings or use an app like "App Inspector" to find the correct package name:</p>
 			<ol>
-				<li>Install both Starnote and Obsidian apps on your Android device</li>
-				<li>Configure Starnote to use Obsidian as a share target for PDF exports</li>
-				<li>The plugin will handle incoming PDFs and create new copies in your vault</li>
+				<li>Open App Inspector (or similar app)</li>
+				<li>Find Starnote in the app list</li>
+				<li>Copy the package name (e.g., com.example.starnote)</li>
+				<li>Paste it in the "Starnote App Package Name" setting above</li>
+			</ol>
+			<h4>Alternative: Manual Import:</h4>
+			<p>If automatic opening doesn't work:</p>
+			<ol>
+				<li>Open Starnote manually from your app drawer</li>
+				<li>Edit PDF and save/export</li>
+				<li>Use "Import PDF File" button above to import to Obsidian</li>
 			</ol>
 		`;
 	}
