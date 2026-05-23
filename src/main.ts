@@ -68,7 +68,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private openStarnoteApp() {
+	public openStarnoteApp() {
 		if (!Platform.isAndroidApp) {
 			new Notice('This feature only works on Android devices');
 			return;
@@ -119,7 +119,7 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 		}
 	}
 
-	private async pickAndImportPdf() {
+	public async pickAndImportPdf() {
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.accept = '.pdf,application/pdf';
@@ -148,9 +148,8 @@ export default class StarnotePdfImporterPlugin extends Plugin {
 			targetPath = await this.resolveFileConflict(targetPath);
 
 			const arrayBuffer = await file.arrayBuffer();
-			const uint8Array = new Uint8Array(arrayBuffer);
 
-			await this.app.vault.createBinary(targetPath, uint8Array);
+			await this.app.vault.createBinary(targetPath, arrayBuffer);
 
 			const importedFile = this.app.vault.getAbstractFileByPath(targetPath);
 			
