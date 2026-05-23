@@ -514,22 +514,41 @@ class StarnotePdfImporterSettingTab extends PluginSettingTab {
 			</div>
 			
 			<div style="background: var(--background-secondary); padding: 16px; border-radius: 8px;">
-				<h4 style="margin-top: 0;">🔍 查找 Starnote 包名 (Find Starnote Package):</h4>
-				<p style="margin: 8px 0;">如果不能自动打开 Starnote，请检查包名是否正确：</p>
+				<h4 style="margin-top: 0;">🔍 查找 StarNote 包名 (Find StarNote Package):</h4>
+				<p style="margin: 8px 0;">如果不能自动打开 StarNote 笔记，请先尝试以下常见包名（复制到上面的设置中）：</p>
+				<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin: 12px 0;">
+					<button id="try1" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.app</button>
+					<button id="try2" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.xiaomiyoupin.starnote</button>
+					<button id="try3" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.editor</button>
+					<button id="try4" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.notes</button>
+					<button id="try5" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">com.starnote.notepad</button>
+					<button id="try6" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); cursor: pointer;">cn.starnote.app</button>
+				</div>
+				<p style="margin-top: 12px;"><strong>如果上面都不行，请手动查找 (Manual Lookup):</strong></p>
 				<ol style="margin: 8px 0; padding-left: 20px;">
 					<li>下载一个应用检查工具（如 "App Inspector" 或 "Package Name Viewer"）</li>
-					<li>打开它，在应用列表中找到 Starnote</li>
+					<li>打开它，在应用列表中找到 "StarNote 笔记"</li>
 					<li>复制它的包名（格式：com.xxx.xxx）</li>
 					<li>粘贴到上面的 "Starnote App Package Name" 设置中</li>
 				</ol>
-				<p style="margin-top: 12px;"><strong>常见包名尝试 (Common Packages to Try):</strong></p>
-				<ul style="margin: 8px 0; padding-left: 20px; font-family: monospace;">
-					<li>com.starnote.app</li>
-					<li>com.xiaomiyoupin.starnote</li>
-					<li>com.starnote.editor</li>
-					<li>com.starnote.notes</li>
-				</ul>
 			</div>
 		`;
+		
+		// Add click handlers to the package name buttons
+		const packageButtons = ['try1', 'try2', 'try3', 'try4', 'try5', 'try6'];
+		const packageNames = ['com.starnote.app', 'com.xiaomiyoupin.starnote', 'com.starnote.editor', 
+		                     'com.starnote.notes', 'com.starnote.notepad', 'cn.starnote.app'];
+		
+		packageButtons.forEach((id, index) => {
+			const btn = document.getElementById(id);
+			if (btn) {
+				btn.addEventListener('click', async () => {
+					this.plugin.settings.starnotePackageName = packageNames[index];
+					await this.plugin.saveSettings();
+					this.display(); // Refresh to show the new value
+					new Notice(`Set package to: ${packageNames[index]}`);
+				});
+			}
+		});
 	}
 }
